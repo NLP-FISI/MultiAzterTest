@@ -7,7 +7,8 @@ import os
 import subprocess
 from pathlib import Path
 import csv
-import stanfordnlp
+#import stanfordnlp
+import stanza
 from cube.api import Cube
 import numpy as np
 from numpy import dot
@@ -21,7 +22,6 @@ import uuid
 
 #extraccion de texto de diferentes tipos
 import textract
-
 # punkt
 nltk.download('punkt')
 # cmudcit
@@ -74,17 +74,18 @@ class ModelAdapter:
                         sequence = self.sent2sequenceStanford(sent)
                         # print(sequence)
                         s.text = sequence
+                        #print(sent.words)
                         for word in sent.words:
                             # Por cada palabra de cada sentencia, creamos un objeto Word que contendra los attrs
                             w = Word()
-                            w.index = str(word.index)
+                            w.index = str(word.id)
                             w.text = word.text
                             w.lemma = word.lemma
                             w.upos = word.upos
                             w.xpos = word.xpos
                             w.feats = word.feats
-                            w.governor = word.governor
-                            w.dependency_relation = word.dependency_relation
+                            w.governor = word.head
+                            w.dependency_relation = word.deprel
                             s.word_list.append(w)
                             # print(str(w.index) + "\t" + w.text + "\t" + w.lemma + "\t" + w.upos + "\t" + w.xpos + "\t" + w.feats + "\t" + str(w.governor) + "\t" + str(w.dependency_relation) +"\t")
                         p.sentence_list.append(s)  # ->paragraph.append(s)
@@ -1509,33 +1510,52 @@ class Word:
                                                     'det', 'clf', 'case'] else False
 
     def is_personal_pronoun(self):
-        atributos = self.feats.split('|')
-        if "PronType=Prs" in atributos:
-            return True
-        else:
+ 
+        try:
+        
+        # print("------")
+        # print(self.text)
+        # print("-------end text---")
+        # print(self.feats)
+        # print("------end feat----")
+            atributos = self.feats.split('|')
+            if "PronType=Prs" in atributos:
+                return True
+            else:
+                return False
+        except AttributeError:
             return False
 
     def is_first_person_pronoun(self, language):
-        atributos = self.feats.split('|')
-        if 'PronType=Prs' in atributos and 'Person=1' in atributos:
-            return True
-        else:
+        try:
+            atributos = self.feats.split('|')
+            if 'PronType=Prs' in atributos and 'Person=1' in atributos:
+                return True
+            else:
+                return False
+        except AttributeError:
             return False
 
     def is_third_personal_pronoun(self, language):
-        atributos = self.feats.split('|')
-        if 'PronType=Prs' in atributos and 'Person=3' in atributos:
-            return True
-        else:
+        try:
+            atributos = self.feats.split('|')
+            if 'PronType=Prs' in atributos and 'Person=3' in atributos:
+                return True
+            else:
+                return False
+        except AttributeError:
             return False
 
     def is_first_personal_pronoun_sing(self, language):
-        atributos = self.feats.split('|')
-        if 'PronType=Prs' in atributos and 'Person=1' in atributos and 'Number=Sing' in atributos:
-            return True
-        else:
+        try:
+            atributos = self.feats.split('|')
+            if 'PronType=Prs' in atributos and 'Person=1' in atributos and 'Number=Sing' in atributos:
+                return True
+            else:
+                return False
+        except AttributeError:
             return False
-
+            
     def num_syllables(self):
         list = []
         max = 0
@@ -2909,16 +2929,16 @@ class NLPCharger:
             if self.lang == "basque":
                 print("-------------You are going to use Basque model-------------")
                 MODELS_DIR = self.dir + '/eu'
-                stanfordnlp.download('eu', MODELS_DIR)  # Download the Basque models
+                stanza.download('eu', MODELS_DIR)  # Download the Basque models
             elif self.lang == "english":
                 print("-------------You are going to use English model-------------")
                 MODELS_DIR = self.dir + '/en'
                 print("-------------Downloading Stanford English model-------------")
-                stanfordnlp.download('en', MODELS_DIR)  # Download the English models
+                stanza.download('en', MODELS_DIR)  # Download the English models
             elif self.lang == "spanish":
                 print("-------------You are going to use Spanish model-------------")
                 MODELS_DIR = self.dir + '/es'
-                stanfordnlp.download('es', MODELS_DIR)  # Download the Spanish models
+                stanza.download('es', MODELS_DIR)  # Download the Spanish models
             else:
                 print("........You cannot use this language...........")
         elif self.lib == "cube":
@@ -2957,21 +2977,21 @@ class NLPCharger:
                           'depparse_model_path': MODELS_DIR + '/eu_bdt_models/eu_bdt_parser.pt',
                           'depparse_pretrain_path': MODELS_DIR + '/eu_bdt_models/eu_bdt.pretrain.pt'
                           }
-                self.parser = stanfordnlp.Pipeline(**config)
+                self.parser = stanza.Pipeline(**config)
 
             elif self.lang == "english":
                 print("-------------You are going to use English model-------------")
                 MODELS_DIR = self.dir + '/en'
                 config = {'processors': 'tokenize,mwt,pos,lemma,depparse',  # Comma-separated list of processors to use
                           'lang': 'en',  # Language code for the language to build the Pipeline in
-                          'tokenize_model_path': MODELS_DIR + '/en_ewt_models/en_ewt_tokenizer.pt',
-                          'pos_model_path': MODELS_DIR + '/en_ewt_models/en_ewt_tagger.pt',
-                          'pos_pretrain_path': MODELS_DIR + '/en_ewt_models/en_ewt.pretrain.pt',
-                          'lemma_model_path': MODELS_DIR + '/en_ewt_models/en_ewt_lemmatizer.pt',
-                          'depparse_model_path': MODELS_DIR + '/en_ewt_models/en_ewt_parser.pt',
-                          'depparse_pretrain_path': MODELS_DIR + '/en_ewt_models/en_ewt.pretrain.pt'
+                          'tokenize_model_path': MODELS_DIR + '/en/tokenize/combined.pt',
+                          'pos_model_path': MODELS_DIR + '/en/pos/combined.pt',
+                          'pos_pretrain_path': MODELS_DIR + '/en/pretrain/combined.pt',
+                          'lemma_model_path': MODELS_DIR + '/en/lemma/combined.pt',
+                          'depparse_model_path': MODELS_DIR + '/en/depparse/combined.pt',
+                          'depparse_pretrain_path': MODELS_DIR + '/en/pretrain/combined.pt'
                           }
-                self.parser = stanfordnlp.Pipeline(**config)
+                self.parser = stanza.Pipeline(**config)
             elif self.lang == "spanish":
                 print("-------------You are going to use Spanish model-------------")
                 MODELS_DIR = self.dir + '/es'
@@ -2985,7 +3005,7 @@ class NLPCharger:
                           'depparse_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_parser.pt',
                           'depparse_pretrain_path': MODELS_DIR + '/es_ancora_models/es_ancora.pretrain.pt'
                           }
-                self.parser = stanfordnlp.Pipeline(**config)
+                self.parser = stanza.Pipeline(**config)
             else:
                 print("........You cannot use this language...........")
         elif self.lib == "cube":
