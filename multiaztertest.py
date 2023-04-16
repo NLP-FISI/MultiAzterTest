@@ -2721,18 +2721,14 @@ class Printer:
         # print(df_new)->  num_words  num_paragraphs  num_sentences
         # 0        100             1            13
         # Replace all NaN elements with 0s.
-        print("[indicators_dict]")
-        print([indicators_dict])
-        print(len(indicators_dict))
+        # print("[indicators_dict]")
+        # print([indicators_dict])
+        # print(len(indicators_dict))
         df_new = df_new.fillna(0)
         # print(df_new[['num_a1_words','adj_density']])
         # dataframe=dataframe+newdataframe
-        df = pd.concat([df, df_new], sort=False)
-
-        df= df.fillna(0)
-        print("printing dataset df")
-        print(df)
-        
+        df = pd.concat([df, df_new], sort=False) # Joining previous data with new one.
+        df= df.fillna(0)       # Replace all NaN elements with 0s.
         return df
 
     def createdataframeforprediction(self, language):
@@ -3317,24 +3313,16 @@ class Main(object):
                     # Prediction
                     dfforprediction = printer.createdataframeforprediction(language)
                     id_dataframe = str(uuid.uuid4())
-                    print("my prediction path: " + path )
+                    print("my path: " + path )
                     dfforprediction.to_csv(os.path.join(path, id_dataframe + ".csv"), encoding='utf-8', index=False)
                     prediction = predictor.predict_dificulty(path, id_dataframe)
                     printer.generate_csv(path, input, prediction)  # path, prediction, opts.similarity)
                     if csv:
-
-                        print("path: " + path)
                         csv_path = path.replace("results", "")
-                        print("csv_path: " + csv_path)
-                        print("id_dataframe: " + id_dataframe)
-                        
-
                         file_path = os.path.join(csv_path, "report" + ".csv")
                         print("file_path: " + file_path)
 
-
-                        
-                        
+                        #Checking whether file exist or not
                         if os.path.exists(file_path):
                             print("File exists!")
                             # Loading the CSV file into a Pandas DataFrame
@@ -3355,11 +3343,7 @@ class Main(object):
                             # Adding new row
                             df_row = printer.write_in_full_csv(df_row, similarity, language, ratios)
                             dfforprediction.to_csv(file_path, encoding='utf-8', index=False)
-                            print("created on " + file_path)
-
-
-                        # dfforprediction.to_csv(os.path.join(path, "report" + ".csv"), encoding='utf-8', index=False)
-                        
+                            print("created on " + file_path)                       
 
                         
             if csv:
