@@ -6,10 +6,10 @@ import math
 import os
 import subprocess
 from pathlib import Path
-import csv
+import csv as csv_lib
 #import stanfordnlp
 import stanza
-from cube.api import Cube
+#from cube.api import Cube
 import numpy as np
 from numpy import dot
 from numpy.linalg import norm
@@ -2721,9 +2721,18 @@ class Printer:
         # print(df_new)->  num_words  num_paragraphs  num_sentences
         # 0        100             1            13
         # Replace all NaN elements with 0s.
-        df_new.fillna(0)
+        print("[indicators_dict]")
+        print([indicators_dict])
+        print(len(indicators_dict))
+        df_new = df_new.fillna(0)
+        # print(df_new[['num_a1_words','adj_density']])
         # dataframe=dataframe+newdataframe
         df = pd.concat([df, df_new], sort=False)
+
+        df= df.fillna(0)
+        print("printing dataset df")
+        print(df)
+        
         return df
 
     def createdataframeforprediction(self, language):
@@ -2744,6 +2753,11 @@ class Printer:
             if key not in ignore_list:
                 indicators_dict[key] = i.get(key)
                 headers.append(key)
+        print('createdataframeforprediction')
+        print(headers)
+        print(indicators_dict)
+        print(len(headers))
+        print('createdataframeforprediction fin ')
         return pd.DataFrame(indicators_dict, columns=headers, index=[0])
 
     def get_level(self, prediction):
@@ -2759,7 +2773,10 @@ class Printer:
 
     @staticmethod
     def create_directory(path):
+        print("path: " + path)
+        print("directorio: " + str(Path(path).parent.absolute()) )
         newPath = os.path.normpath(str(Path(path).parent.absolute()) + "/results")
+        #newPath = os.path.normpath(str(Path(path).parent.absolute()) + "/results")
         if not os.path.exists(newPath):
             os.makedirs(newPath)
         return newPath
@@ -2773,7 +2790,7 @@ class Maiztasuna:
 
     def load(self):
         with open(self.path, encoding='utf-8') as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
+            csv_reader = csv_lib.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 Maiztasuna.freq_list[row[1].strip()] = row[0]
 
@@ -3279,6 +3296,7 @@ class Main(object):
              predictor.stop_jvm()
         else:
             ### Files will be created in this folder
+            print("files[0]:" + str(files[0]))
             path = Printer.create_directory(files[0])
             print("Path:" + str(path))
             df_row = None
@@ -3286,6 +3304,7 @@ class Main(object):
             for input in files:
                 # texto directamente de fichero
                 text = self.extract_text_from_file(input)
+                print(text)
                 # if the type of the text is compatible...
                 if text is not None:
                     # Get indicators
@@ -3298,11 +3317,51 @@ class Main(object):
                     # Prediction
                     dfforprediction = printer.createdataframeforprediction(language)
                     id_dataframe = str(uuid.uuid4())
+                    print("my prediction path: " + path )
                     dfforprediction.to_csv(os.path.join(path, id_dataframe + ".csv"), encoding='utf-8', index=False)
                     prediction = predictor.predict_dificulty(path, id_dataframe)
                     printer.generate_csv(path, input, prediction)  # path, prediction, opts.similarity)
                     if csv:
-                        df_row = printer.write_in_full_csv(df_row, similarity, language, ratios)
+
+                        print("path: " + path)
+                        csv_path = path.replace("results", "")
+                        print("csv_path: " + csv_path)
+                        print("id_dataframe: " + id_dataframe)
+                        
+
+                        file_path = os.path.join(csv_path, "report" + ".csv")
+                        print("file_path: " + file_path)
+
+
+                        
+                        
+                        if os.path.exists(file_path):
+                            print("File exists!")
+                            # Loading the CSV file into a Pandas DataFrame
+                            df_row = pd.read_csv(file_path)
+                            # Adding new row
+                            # df_row = printer.write_in_full_csv(df_row, similarity, language, ratios)
+                            df_row= pd.concat([df_row, dfforprediction], sort=False)
+                            print(dfforprediction)
+                            # convert dataframe to tuple
+                            row_tuple = tuple(df_row.iloc[-1])
+                            print(row_tuple)
+                            with open(file_path, 'a', newline="") as f:
+                                writer = csv_lib.writer(f)
+                                writer.writerow(row_tuple)
+                                print("appending on " + file_path)      
+                        else:
+                            print("File does not exist.")
+                            # Adding new row
+                            df_row = printer.write_in_full_csv(df_row, similarity, language, ratios)
+                            dfforprediction.to_csv(file_path, encoding='utf-8', index=False)
+                            print("created on " + file_path)
+
+
+                        # dfforprediction.to_csv(os.path.join(path, "report" + ".csv"), encoding='utf-8', index=False)
+                        
+
+                        
             if csv:
                 df_row.to_csv(os.path.join(path, "full_results_aztertest.csv"), encoding='utf-8', index=False)
             predictor.stop_jvm()
