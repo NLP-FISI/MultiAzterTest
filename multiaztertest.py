@@ -2,6 +2,9 @@
 # coding: utf-8
 
 # In[29]:
+
+import datasetReader
+
 import math
 import os
 import subprocess
@@ -766,6 +769,7 @@ class Document:
         # subordinadas_labels = ['csubj', 'csubj:pass', 'ccomp', 'xcomp', 'advcl', 'acl', 'acl:relcl']
         decendents_total = 0
         text_without_punctuation = []
+        print('calculate_all_numbers')
         # Wordnet config lang
         if self.language == "english":
             self.wn_lang = "eng"
@@ -3010,13 +3014,24 @@ class NLPCharger:
                 MODELS_DIR = self.dir + '/es'
                 config = {'processors': 'tokenize,pos,lemma,depparse',  # Comma-separated list of processors to use
                           'lang': 'es',  # Language code for the language to build the Pipeline in
-                          'tokenize_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_tokenizer.pt',
+                        #   'tokenize_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_tokenizer.pt',
+                          'tokenize_model_path': MODELS_DIR + '/es/tokenize/ancora.pt',
                           # Processor-specific arguments are set with keys "{processor_name}_{argument_name}"
-                          'pos_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_tagger.pt',
-                          'pos_pretrain_path': MODELS_DIR + '/es_ancora_models/es_ancora.pretrain.pt',
-                          'lemma_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_lemmatizer.pt',
-                          'depparse_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_parser.pt',
-                          'depparse_pretrain_path': MODELS_DIR + '/es_ancora_models/es_ancora.pretrain.pt'
+
+                        #   'pos_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_tagger.pt',
+                          'pos_model_path': MODELS_DIR + '/es/pos/ancora.pt',
+
+                        #   'pos_pretrain_path': MODELS_DIR + '/es_ancora_models/es_ancora.pretrain.pt',
+                          'pos_pretrain_path': MODELS_DIR + '/es/pretrain/ancora.pt',
+
+                        #   'lemma_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_lemmatizer.pt',
+                          'lemma_model_path': MODELS_DIR + '/es/lemma/ancora.pt',
+
+                        #   'depparse_model_path': MODELS_DIR + '/es_ancora_models/es_ancora_parser.pt',
+                          'depparse_model_path': MODELS_DIR + '/es/depparse/ancora.pt',
+
+                        #   'depparse_pretrain_path': MODELS_DIR + '/es_ancora_models/es_ancora.pretrain.pt'
+                          'depparse_pretrain_path': MODELS_DIR + '/es/pretrain/ancora.pt'
                           }
                 self.parser = stanza.Pipeline(**config)
             else:
@@ -3297,9 +3312,12 @@ class Main(object):
             print("Path:" + str(path))
             df_row = None
 
-            for input in files:
+            list_text = datasetReader.get_text()
+
+            for text in list_text:
                 # texto directamente de fichero
-                text = self.extract_text_from_file(input)
+                # text = self.extract_text_from_file(input)
+
                 print(text)
                 # if the type of the text is compatible...
                 if text is not None:
@@ -3315,8 +3333,8 @@ class Main(object):
                     id_dataframe = str(uuid.uuid4())
                     print("my path: " + path )
                     dfforprediction.to_csv(os.path.join(path, id_dataframe + ".csv"), encoding='utf-8', index=False)
-                    prediction = predictor.predict_dificulty(path, id_dataframe)
-                    printer.generate_csv(path, input, prediction)  # path, prediction, opts.similarity)
+                    #prediction = predictor.predict_dificulty(path, id_dataframe)
+                    #printer.generate_csv(path, input, prediction)  # path, prediction, opts.similarity)
                     if csv:
                         csv_path = path.replace("results", "")
                         file_path = os.path.join(csv_path, "report" + ".csv")
