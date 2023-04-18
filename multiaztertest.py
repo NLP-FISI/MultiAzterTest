@@ -3,7 +3,7 @@
 
 # In[29]:
 
-import datasetReader
+#import datasetReader
 
 import math
 import os
@@ -778,7 +778,8 @@ class Document:
         elif self.language == "spanish":
             self.wn_lang = "spa"
         if similarity is not None:
-            self.num_features = 512
+            #self.num_features = 512
+            self.num_features = 300
             self.model = similarity[0]
             self.index2word_set = similarity[1]
 
@@ -1782,6 +1783,8 @@ class Word:
             else:
                 return False
         else:
+            if self.feats == None:
+                return False
             atributos = self.feats.split('|')
             if 'Polarity=Neg' in atributos:
                 return True
@@ -2942,6 +2945,7 @@ class NLPCharger:
 
     def download_model(self):
         if self.lib == "stanford":
+            print(self.dir)
             print("-----------You are going to use Stanford library-----------")
             if self.lang == "basque":
                 print("-------------You are going to use Basque model-------------")
@@ -3162,15 +3166,21 @@ class Similarity:
         salida = []
         model = None
         index2word_set = None
+        
+        print("Loading word vectors ...")
         if self.language == "english":
-            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/en/en.bin", binary=True)
-            index2word_set = set(model.wv.index2word)
+            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/en/en.vec", binary=False, encoding='utf8')
+            #index2word_set = set(model.wv.index2word)
+            index2word_set = set(model.index_to_key)
         elif self.language == "basque":
-            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/eu/eu.bin", binary=True)
-            index2word_set = set(model.wv.index2word)
+            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/eu/eu.vec", binary=False, encoding='utf8')
+            #index2word_set = set(model.wv.index2word)
+            index2word_set = set(model.index_to_key)            
         elif self.language == "spanish":
-            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/es/es.bin", binary=True)
-            index2word_set = set(model.wv.index2word)
+            model = gensim.models.KeyedVectors.load_word2vec_format("wordembeddings/es/es.vec", binary=False, encoding='utf8')                         
+            #index2word_set = set(model.wv.index2word)
+            index2word_set = set(model.index_to_key)
+        print("Word vectors loaded.")                       
         salida.append(model)
         salida.append(index2word_set)
         return salida
@@ -3311,13 +3321,25 @@ class Main(object):
             path = Printer.create_directory(files[0])
             print("Path:" + str(path))
             df_row = None
+            
+            fs = []
+            if files[0].endswith(".tsv"):
+                df = pd.read_csv(files[0], sep="\t", encoding="utf-8")
+                fs = df["text"].tolist()
+            
+            print(len(fs))
 
-            list_text = datasetReader.get_text()
 
-            for text in list_text:
+            #for text in list_text:
+            for idx, input in enumerate(fs): #files
                 # texto directamente de fichero
-                # text = self.extract_text_from_file(input)
-
+                '''
+                if not files[0].endswith(".tsv"):
+                    text = self.extract_text_from_file(input)
+                else:
+                    text = input
+                '''
+                text = input
                 print(text)
                 # if the type of the text is compatible...
                 if text is not None:
@@ -3333,8 +3355,9 @@ class Main(object):
                     id_dataframe = str(uuid.uuid4())
                     print("my path: " + path )
                     dfforprediction.to_csv(os.path.join(path, id_dataframe + ".csv"), encoding='utf-8', index=False)
-                    #prediction = predictor.predict_dificulty(path, id_dataframe)
+                    prediction = predictor.predict_dificulty(path, id_dataframe)
                     #printer.generate_csv(path, input, prediction)  # path, prediction, opts.similarity)
+                    printer.generate_csv(path, str(idx), prediction)  # path, prediction, opts.similarity)
                     if csv:
                         csv_path = path.replace("results", "")
                         file_path = os.path.join(csv_path, "report" + ".csv")
